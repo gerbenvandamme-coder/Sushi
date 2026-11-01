@@ -827,7 +827,7 @@
       <!-- Intro clip. data-src is tried first, data-fallback-src only if that file fails to load.
            Currently sushidropping1_scrolling_1080.mp4 (1080p, 75 fps) with the 720p original as fallback. To change the fallback, set
            data-fallback-src="Assets/Videos/Wok2.mp4" on the video element. -->
-      <video class="scrub__video" data-src="Assets/Videos/sushidropping1_scrolling_1080.mp4" data-fallback-src="Assets/Videos/sushidropping1_scrolling.mp4" muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
+      <video class="scrub__video" data-phone-src="Assets/Videos/sushidropping1_phone.mp4" data-src="Assets/Videos/sushidropping1_scrolling_1080.mp4" data-fallback-src="Assets/Videos/sushidropping1_scrolling.mp4" muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
       <div class="scrub__scrim"></div>
       <div class="scrub__stage">
         <p class="scrub__cue font-display">
@@ -2573,10 +2573,24 @@
       var runway = document.getElementById('scrub');
       var video = runway ? runway.querySelector('.scrub__video') : null;
       /* Clip list: data-src is tried first, data-fallback-src only if that file fails to load. */
+      var STALL_MS = 8000;      /* phones only: no metadata after this long counts as a failed clip */
+
+      /* True for phones, false for tablets (iPad, Android tablets) and desktops. iPadOS reports itself as
+         a Mac, and Android tablets leave "Mobile" out of the user agent, so neither matches. */
+      function isPhone() {
+        var uaData = navigator.userAgentData;
+        if (uaData && typeof uaData.mobile === 'boolean') return uaData.mobile;
+        return /iPhone|iPod|Android.+Mobile|Windows Phone/i.test(navigator.userAgent || '');
+      }
+      var phone = isPhone();
+
+      /* Phones get the level 4.2 / 60 fps clip first (the 1080p/75 fps one needs level 5.1, which many phone
+         decoders lack), then the 720p clip. Everything else keeps data-src first, then the 720p clip. */
       var sources = video
-        ? [video.getAttribute('data-src'), video.getAttribute('data-fallback-src')].filter(Boolean)
+        ? [phone ? video.getAttribute('data-phone-src') : video.getAttribute('data-src'), video.getAttribute('data-fallback-src')].filter(Boolean)
         : [];
       var sourceIndex = 0;
+      var stallTimer = 0;
       if (!runway || !video || !sources.length) {
         root.classList.remove('scrub-on');
         return;
@@ -2658,6 +2672,7 @@
 
       function onMetadata() {
         if (!isFinite(video.duration) || video.duration <= 0) return;
+        window.clearTimeout(stallTimer);
         duration = video.duration;
         target = current = readProgress();
         wake();
@@ -2667,6 +2682,7 @@
       function disable() {
         if (rafId) window.cancelAnimationFrame(rafId);
         rafId = 0;
+        window.clearTimeout(stallTimer);
         window.removeEventListener('scroll', onScroll);
         window.removeEventListener('resize', onScroll);
         window.removeEventListener('pageshow', onScroll);
@@ -2675,11 +2691,22 @@
         root.classList.remove('scrub-on', 'is-menu-visible');
       }
 
+      /* Some phone decoders accept a clip but never fire "error" or "loadedmetadata". On phones, move on to
+         the next clip when no metadata has arrived in time. The last clip in the list is never timed out. */
+      function armStallTimer() {
+        window.clearTimeout(stallTimer);
+        if (!phone || sourceIndex >= sources.length - 1) return;
+        stallTimer = window.setTimeout(function () {
+          if (!duration) onError();
+        }, STALL_MS);
+      }
+
       /* A clip failed to load: try the next one in the list, and only give up when none are left. */
       function onError() {
         if (sourceIndex < sources.length - 1) {
           sourceIndex += 1;
           video.src = sources[sourceIndex];
+          armStallTimer();
           return;
         }
         disable();
@@ -2708,6 +2735,7 @@
       showProgress(target);
       /* The src is set here, not in the markup, so visitors without the effect never download the video. */
       video.src = sources[0];
+      armStallTimer();
     })();
   </script>
 <script>
