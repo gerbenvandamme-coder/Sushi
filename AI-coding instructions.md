@@ -23,8 +23,8 @@ Deliver the entire deliverable as a **single, standalone, self-contained `index.
 ---
 
 # TECHNICAL STACK & SINGLE-FILE CONSTRAINTS
-- **Tailwind CSS:** Integrated via CDN (`https://cdn.tailwindcss.com`).
-- **Icons:** Lucide Icons via CDN (`https://unpkg.com/lucide@latest`).
+- **Tailwind CSS:** Prebuilt and minified, inlined in a `<style>` block at the end of `<head>` (no CDN script). Accent colors are `ember` (#FF7A2F) and `ember-deep` (#C8470D).
+- **Icons:** Lucide icons, inlined as SVG. `refreshIcons()` replaces every `<i data-lucide="name">` using the `SVG_ICONS` map in the script (no icon library is downloaded).
 - **Data Engine:** Embed the complete menu inventory (193 products across 22 categories) as a structured client-side JavaScript object (`const MENU_DATA = [...]`). 
 - **Dynamic DOM Rendering:** Render menu cards dynamically via vanilla JavaScript based on the selected category, search query, or dietary filters (vegetarian/spicy). This guarantees ultra-fast rendering, zero DOM bloat, and smooth client-side performance.
 - **Asset Fallbacks:** Use the 3 verified scraped asset URLs for featured categories. For dish cards without individual photos, implement a minimalist Apple-style typography-first card layout or elegant blurred geometric glass placeholders with an option to insert images later. Never fabricate fake image associations.
