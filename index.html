@@ -2,7 +2,7 @@
 <html lang="nl-BE">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Sushi Dai Merchtem · Sushi & Aziatische gerechten bestellen</title>
   <meta name="description" content="Authentieke Japanse & Aziatische gastronomie in Merchtem. Bekijk de volledige kaart en bestel sushi, wok en meer om af te halen of te laten leveren.">
   <meta name="theme-color" content="#090A0E">
@@ -14,8 +14,6 @@
         var saved = window.localStorage.getItem('sushidai.theme');
         if (saved === 'light' || saved === 'dark') {
           theme = saved;
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-          theme = 'light';
         }
       } catch (err) {
         /* Storage blocked: keep the default. */
@@ -57,7 +55,7 @@
       --crimson: #E11D48;
     }
     * { -webkit-tap-highlight-color: transparent; }
-    html { scroll-behavior: smooth; scroll-padding-top: 100px; color-scheme: dark; }
+    html { scroll-behavior: smooth; scroll-padding-top: 100px; color-scheme: dark; touch-action: pan-x pan-y; overflow-x: hidden; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     body {
       margin: 0;
       background: #090A0E;
@@ -65,10 +63,15 @@
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
-      overflow-x: hidden;
+      overflow-x: clip;
       line-height: 1.55;
     }
     body.locked { overflow: hidden; }
+    /* Nothing may widen the page: the orbs, the category slider and any wide child are clipped at the
+       edge of the app. "clip" (unlike "hidden") creates no scroll container, so position: sticky keeps working. */
+    #app { overflow-x: clip; max-width: 100%; }
+    /* The category slider scrolls sideways on its own; the page itself only pans vertically. */
+    .cat-scroller { touch-action: pan-x pan-y; }
     /* Tailwind utilities such as .flex would otherwise override the hidden attribute. */
     [hidden] { display: none !important; }
     .font-display { font-family: "Cinzel", "Playfair Display", Georgia, serif; }
@@ -141,8 +144,33 @@
 
     /* Ambient orbs */
     .orb { position: absolute; z-index: -1; border-radius: 9999px; filter: blur(90px); pointer-events: none; }
-    .orb-a { width: 520px; height: 520px; top: -140px; right: -120px; background: radial-gradient(circle, rgba(244, 63, 94, 0.55), rgba(225, 29, 72, 0) 70%); }
-    .orb-b { width: 460px; height: 460px; bottom: -160px; left: -140px; background: radial-gradient(circle, rgba(225, 29, 72, 0.32), rgba(9, 10, 14, 0) 70%); }
+    /* The hero used to clip the glow with overflow-hidden, which left a hard horizontal edge.
+       Let it bleed into the next section; body already hides horizontal overflow. */
+    #top { overflow: visible; }
+    /* The hero is isolated and positioned, so it would paint over the plain sections below it.
+       Lifting them keeps the bleeding glow behind their content. */
+    #signature, #kaart, #info { position: relative; z-index: 1; }
+    .orb { will-change: transform; }
+    .orb-a {
+      width: 560px; height: 560px; top: -160px; right: -140px;
+      background: radial-gradient(circle at 40% 40%, rgba(244, 63, 94, 0.55), rgba(225, 29, 72, 0.18) 45%, rgba(225, 29, 72, 0) 70%);
+      animation: orb-drift-a 22s ease-in-out infinite alternate;
+    }
+    .orb-b {
+      width: 620px; height: 620px; bottom: -200px; left: -180px;
+      background:
+        radial-gradient(circle at 60% 40%, rgba(225, 29, 72, 0.4), rgba(136, 19, 55, 0.14) 45%, rgba(9, 10, 14, 0) 70%);
+      animation: orb-drift-b 26s ease-in-out infinite alternate;
+    }
+    /* Warm lantern glow behind the headline, low strength so text contrast is unchanged. */
+    .orb-c {
+      width: 380px; height: 380px; top: 38%; left: 18%;
+      background: radial-gradient(circle, rgba(251, 146, 60, 0.2), rgba(251, 146, 60, 0) 68%);
+      animation: orb-drift-c 30s ease-in-out infinite alternate;
+    }
+    @keyframes orb-drift-a { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-50px, 40px, 0) scale(1.12); } }
+    @keyframes orb-drift-b { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(70px, -50px, 0) scale(1.15); } }
+    @keyframes orb-drift-c { from { transform: translate3d(0, 0, 0) scale(0.9); } to { transform: translate3d(60px, -30px, 0) scale(1.1); } }
     .text-gradient {
       background: linear-gradient(120deg, #fff 10%, #FDA4AF 55%, #F43F5E 100%);
       -webkit-background-clip: text;
@@ -230,13 +258,16 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .cat-wrap { position: relative; }
     .cat-scroller {
+      --cat-gutter: 16px;
       position: relative; display: flex; gap: 12px; overflow-x: auto;
-      margin-inline: -18px; padding: 12px 18px 22px;
-      scroll-snap-type: x proximity; scroll-padding-inline: 18px; overscroll-behavior-x: contain;
+      margin-inline: calc(var(--cat-gutter) * -1); padding: 12px var(--cat-gutter) 22px;
+      scroll-snap-type: x proximity; scroll-padding-inline: var(--cat-gutter); overscroll-behavior-x: contain;
       -webkit-mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent);
       mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent);
     }
     .cat-scroller.dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+    /* Matches the section padding (px-4 below 640px, px-6 from 640px) so the slider never exceeds the viewport. */
+    @media (min-width: 640px) { .cat-scroller { --cat-gutter: 24px; } }
     .cat-card {
       --h: 350;
       position: relative; isolation: isolate; flex: 0 0 auto; scroll-snap-align: start;
@@ -323,6 +354,112 @@
     .stepper button { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9999px; cursor: pointer; color: #F5F5F7; }
     .stepper button:hover { background: rgba(255, 255, 255, 0.14); }
     .stepper span { min-width: 1.6rem; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* ===== Dish add-to-cart control: round "+" that pops into a dark "− n +" pill =====
+       .qty is a fixed 44px slot, so the card layout never shifts. The pill is absolutely positioned
+       at the right edge and grows to the left. data-qty="0" is the round state, anything else is the pill.
+       Opening timeline (620ms): the bubble squashes and overshoots while the gyoza pops in; at 320ms the
+       pill expands to the left and turns dark; the "− n +" row fades in at 360ms. */
+    .qty {
+      --qty-red: #ff3b5c;
+      --qty-dark: #1e2129;
+      --qty-size: 44px;
+      --qty-wide: 104px;
+      --qty-glow: 0 4px 14px rgba(255, 59, 92, 0.35);
+      --qty-lift: 0 4px 16px rgba(0, 0, 0, 0.45);
+      --qty-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative; flex: none; width: var(--qty-size); height: var(--qty-size);
+    }
+    .qty__pill {
+      position: absolute; top: 0; right: 0; z-index: 1;
+      width: var(--qty-size); height: var(--qty-size); overflow: hidden; border-radius: 9999px;
+      background-color: var(--qty-red); box-shadow: var(--qty-glow);
+      transform-origin: right center; will-change: transform;
+      /* Collapse (back to 0): no delay, so the pill shrinks right away. */
+      transition: width 280ms var(--ease), background-color 240ms ease, box-shadow 240ms ease, transform 200ms var(--qty-spring);
+    }
+    .qty:not([data-qty="0"]) .qty__pill {
+      width: var(--qty-wide); background-color: var(--qty-dark); box-shadow: var(--qty-lift);
+      /* Expand: wait 320ms so the gyoza bounce plays first. */
+      transition: width 380ms cubic-bezier(0.34, 1.45, 0.64, 1) 320ms, background-color 280ms ease 320ms, box-shadow 280ms ease 320ms, transform 200ms var(--qty-spring);
+    }
+    @media (hover: hover) {
+      .qty[data-qty="0"] .qty__pill:hover { transform: scale(1.06); }
+    }
+
+    /* Buttons inside the pill stay transparent in every state: only the pill has a background. */
+    .qty .qty__add, .qty .qty__side {
+      appearance: none; display: grid; place-items: center; margin: 0; padding: 0; border: 0;
+      background: transparent; box-shadow: none; color: #fff; cursor: pointer;
+    }
+    .qty .qty__add {
+      position: absolute; top: 0; right: 0; width: var(--qty-size); height: var(--qty-size); border-radius: 9999px;
+      transition: opacity 160ms ease 200ms, transform 240ms var(--qty-spring) 200ms;
+    }
+    .qty:not([data-qty="0"]) .qty__add {
+      opacity: 0; transform: scale(0.2) rotate(90deg); pointer-events: none;
+      transition: opacity 150ms ease, transform 200ms var(--qty-spring);
+    }
+
+    .qty__row {
+      position: absolute; top: 0; right: 0; box-sizing: border-box;
+      width: var(--qty-wide); height: var(--qty-size); padding: 0 7px;
+      display: flex; align-items: center; justify-content: space-between;
+      opacity: 0; visibility: hidden;
+      transition: opacity 90ms linear, visibility 0s linear 90ms;
+    }
+    .qty:not([data-qty="0"]) .qty__row {
+      /* Visible at once (so restoreFocus can focus the + button); only the fade-in waits for the pill. */
+      opacity: 1; visibility: visible;
+      transition: opacity 200ms ease 360ms, visibility 0s;
+    }
+    .qty .qty__side {
+      flex: none; width: 30px; height: 30px; border-radius: 9999px; color: #f1f5f9;
+      transition: background-color 150ms ease, transform 100ms ease;
+    }
+    .qty .qty__side:focus, .qty .qty__side:active { background: transparent; box-shadow: none; }
+    .qty .qty__side:hover { background: rgba(255, 255, 255, 0.1); box-shadow: none; }
+    .qty .qty__side:active { transform: scale(0.85); }
+    .qty .qty__side:focus-visible, .qty .qty__add:focus-visible { outline: 2px solid #fff; outline-offset: -4px; border-radius: 9999px; }
+    .qty__num {
+      flex: 1; text-align: center; color: #fff; font-size: 15px; font-weight: 700; line-height: 1;
+      font-variant-numeric: tabular-nums; user-select: none;
+    }
+
+    .qty__gyoza {
+      position: absolute; top: 0; right: 0; width: var(--qty-size); height: var(--qty-size);
+      display: grid; place-items: center; opacity: 0; pointer-events: none;
+      filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+    }
+
+    .qty__gyoza img { display: block; width: 30px; height: 30px; object-fit: contain; user-select: none; }
+    .qty.is-opening .qty__pill { animation: qty-bounce 620ms var(--qty-spring) forwards; }
+    .qty.is-opening .qty__gyoza { animation: qty-gyoza 620ms var(--qty-spring) forwards; }
+    .qty__num.is-bump { animation: qty-bump 180ms var(--qty-spring); }
+
+    @keyframes qty-bounce {
+      0%   { transform: scale(1); }
+      20%  { transform: scale(0.82) scaleX(1.1); }
+      50%  { transform: scale(1.28) scaleY(1.15); }
+      75%  { transform: scale(0.96); }
+      100% { transform: scale(1); }
+    }
+    @keyframes qty-gyoza {
+      0%   { opacity: 1; transform: scale(0) rotate(-35deg); }
+      35%  { opacity: 1; transform: scale(1.35) rotate(12deg); }
+      65%  { opacity: 1; transform: scale(1.05) rotate(-6deg); }
+      85%  { opacity: 1; transform: scale(1) rotate(0deg); }
+      100% { opacity: 0; transform: scale(0.6) rotate(0deg); }
+    }
+    @keyframes qty-bump {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      /* No keyframes and no delays; the resting styles already show the correct end state. */
+      .qty, .qty * { animation: none !important; transition-duration: 1ms !important; transition-delay: 0s !important; }
+    }
 
     /* Segmented control (afhalen / levering) */
     .seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 9999px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -523,14 +660,21 @@
   <style>
     /* ===== Scroll-scrubbed intro video (everything is keyed on html.scrub-on) ===== */
     :root {
-      --scrub-length: 350vh;
+      --scrub-length: 300vh;
       --scrub-scrim: #090A0E;
-      --scrub-scrim-opacity: 0.92;
+      --scrub-scrim-opacity: 0.7;   /* dark mode: overlay strength once the fade is complete */
+      --scrub-dim: 0.6;             /* dark mode: video brightness ends at 1 - 0.6 = 0.4 */
+      --scrub-blur: 6px;            /* softening reached at the end of the fade */
+      --dock-distance: 60vh;        /* how far below its resting place each hero block starts */
+      --dock-duration: 1100ms;
+      --dock-ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --dock-stagger: 1.8;          /* multiplies each block's inline --d delay (about 110-145ms between blocks) */
     }
     /* Light mode needs a fully opaque scrim so the secondary text keeps its 4.5:1 contrast. */
     html[data-theme="light"] {
       --scrub-scrim: #F5F5F7;
       --scrub-scrim-opacity: 1;
+      --scrub-dim: 0;
     }
 
     .scrub { display: none; }
@@ -540,14 +684,19 @@
       position: fixed; inset: 0; z-index: -1;
       width: 100vw; height: 100vh; height: 100dvh;
       object-fit: cover; background: #090A0E; pointer-events: none;
+      /* Dims and softens over the last 20% of the runway (--scrub-fade is set from JS, 0 to 1).
+         The slight scale hides the transparent edges the blur would otherwise create. */
+      transform: scale(calc(1 + var(--scrub-fade, 0) * 0.06));
+      filter: brightness(calc(1 - var(--scrub-fade, 0) * var(--scrub-dim, 0.6))) blur(calc(var(--scrub-fade, 0) * var(--scrub-blur, 6px)));
+      will-change: transform, filter;
     }
-    /* Sits above the video and below the page. It fades in with the menu so text stays readable. */
+    /* Sits above the video and below the page. It fades in with the scroll (last 20% of the runway) so text stays readable. */
     .scrub__scrim {
       position: fixed; inset: 0; z-index: -1; pointer-events: none;
-      background: var(--scrub-scrim); opacity: 0;
-      transition: opacity 700ms var(--ease);
+      background: var(--scrub-scrim);
+      /* Scroll-driven, so no transition. */
+      opacity: calc(var(--scrub-fade, 0) * var(--scrub-scrim-opacity, 0.7));
     }
-    html.is-menu-visible .scrub__scrim { opacity: var(--scrub-scrim-opacity); }
 
     /* Scroll cue: pinned to the viewport during the runway and faded out by --scrub-p (set from JS). */
     .scrub__stage {
@@ -578,6 +727,50 @@
     html.scrub-on.is-menu-visible #app > footer {
       opacity: 1; pointer-events: auto;
     }
+
+    /* ===== Magnetic dock and section snapping (all gated on html.scrub-on) ===== */
+
+    /* Pull the page up by one viewport so the hero sits in the last screen of the runway
+       and docks over the dimmed video instead of arriving from below the fold. */
+    html.scrub-on #app > main {
+      position: relative;
+      margin-top: -100vh; margin-top: -100dvh;
+      transition-duration: 300ms;
+    }
+
+    /* Hero blocks wait below the fold, then are pulled into place one after another.
+       The delay reuses each block's inline --d value, scaled by --dock-stagger. */
+    html.scrub-on #top .reveal {
+      opacity: 0;
+      transform: translate3d(0, var(--dock-distance), 0);
+      transition: transform 450ms cubic-bezier(0.7, 0, 0.84, 0), opacity 250ms linear;
+      will-change: transform, opacity;
+    }
+    html.scrub-on.is-menu-visible #top .reveal {
+      opacity: 1;
+      transform: none;
+      transition:
+        transform var(--dock-duration) var(--dock-ease) calc(var(--d, 0ms) * var(--dock-stagger)),
+        opacity 500ms linear calc(var(--d, 0ms) * var(--dock-stagger));
+    }
+    /* The IntersectionObserver still adds .in; its rise keyframes would fight the dock transform. */
+    html.scrub-on #top .reveal.in { animation: none; }
+
+    /* No section snapping. The sections have very different heights (and #signature and #kaart are taller
+       than the screen on phones), so a fixed snap point left half-sections in view and pulled the page back
+       to an awkward place when scrolling on. The end of the intro is handled by dockToHero in the script. */
+    /* Inertia scrolling (mouse and trackpad) is done in JS. Native smooth scrolling and snapping would
+       fight with the per-frame scrollTo calls, so both are switched off while it is active. */
+    html.smooth-on { scroll-behavior: auto; scroll-snap-type: none; }
+    /* Intro gate: while the intro is waiting or being driven by script, native snapping and smooth
+       scrolling would fight with the per-frame scrollTo calls. */
+    html.intro-zone { scroll-behavior: auto; scroll-snap-type: none; }
+    /* Anchor glide (menu button, nav links): the script moves the page frame by frame, so native smooth
+       scrolling and snapping must stay out of the way until it has arrived. */
+    html.glide-on { scroll-behavior: auto; scroll-snap-type: none; }
+    /* html has scroll-padding-top: 100px for the fixed nav. Cancel it for the hero so anchor links to it
+       land exactly where the runway ends (progress 1) and not at ~95%, where the page is still hidden. */
+    html.scrub-on #top { scroll-margin-top: -100px; }
   </style>
 </head>
 
@@ -631,7 +824,10 @@
 
     <!-- Scroll runway: its height is the scroll distance that scrubs the video. -->
     <div id="scrub" class="scrub" aria-hidden="true">
-      <video class="scrub__video" data-src="Assets/Videos/sushi-drop.mp4" muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
+      <!-- Intro clip. data-src is tried first, data-fallback-src only if that file fails to load.
+           Currently sushidropping1_scrolling_1080.mp4 (1080p, 75 fps) with the 720p original as fallback. To change the fallback, set
+           data-fallback-src="Assets/Videos/Wok2.mp4" on the video element. -->
+      <video class="scrub__video" data-src="Assets/Videos/sushidropping1_scrolling_1080.mp4" data-fallback-src="Assets/Videos/sushidropping1_scrolling.mp4" muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
       <div class="scrub__scrim"></div>
       <div class="scrub__stage">
         <p class="scrub__cue font-display">
@@ -646,6 +842,7 @@
       <section id="top" class="relative isolate overflow-hidden px-4 pb-20 pt-32 sm:px-6 sm:pt-40 lg:pb-28" aria-labelledby="hero-title">
         <div class="orb orb-a" aria-hidden="true"></div>
         <div class="orb orb-b" aria-hidden="true"></div>
+        <div class="orb orb-c" aria-hidden="true"></div>
 
         <div class="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
@@ -663,11 +860,7 @@
             <div class="reveal mt-9 flex flex-col gap-3 sm:flex-row" style="--d:260ms">
               <a href="#kaart" class="btn btn-primary press">
                 <i data-lucide="utensils" class="h-5 w-5"></i>
-                Direct Bestellen
-              </a>
-              <a href="#kaart" data-goto="Mix Boot" class="btn btn-glass press">
-                Bekijk Mix Boten
-                <i data-lucide="arrow-right" class="h-5 w-5"></i>
+                Bekijk Menu
               </a>
             </div>
 
@@ -804,13 +997,7 @@
             </div>
           </div>
 
-          >>>>>>> REPLACE
-
-<<<<<<< SEARCH
-<div id="menu-grid"></div>
-=======
-<div id="menu-grid" class="mt-6"></div>
-          <div id="menu-grid"></div>
+          <div id="menu-grid" class="mt-6"></div>
         </div>
       </section>
 
@@ -1562,14 +1749,32 @@
           '</div>';
       }
 
+      /* Inline SVGs for the dish control, so it needs no icon font or extra request. */
+      const QTY_SVG = 'width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"';
+      const QTY_ICONS = {
+        plus: '<svg ' + QTY_SVG + '><path d="M12 5v14M5 12h14"/></svg>',
+        minus: '<svg ' + QTY_SVG + '><path d="M5 12h14"/></svg>',
+        gyoza: '<img src="Assets/Images/Icon/Sushicon-128.png" width="30" height="30" alt="" decoding="async" draggable="false">'
+      };
+
+      /* One markup for every state: data-qty="0" is the round button, anything else is the "− n +" pill.
+         The number never renders "0", so no ghost text is left while the pill collapses. */
       function controlHtml(id) {
         const item = BY_ID.get(id);
         const qty = state.cart[id] || 0;
         const safeName = esc(cap(item.name));
-        if (!qty) {
-          return '<button type="button" class="add-btn press" data-act="add" data-id="' + id + '" aria-label="Voeg ' + safeName + ' toe aan je mandje"><i data-lucide="plus" class="h-5 w-5"></i></button>';
-        }
-        return stepperHtml(id, qty, safeName);
+        const off = qty ? '' : ' disabled';
+        return '<div class="qty" data-qty="' + qty + '">' +
+          '<div class="qty__pill">' +
+          '<div class="qty__row" role="group" aria-label="Aantal ' + safeName + '">' +
+          '<button type="button" class="qty__side" data-act="dec" data-id="' + id + '" aria-label="Minder ' + safeName + '"' + off + '>' + QTY_ICONS.minus + '</button>' +
+          '<span class="qty__num" aria-live="polite">' + (qty || 1) + '</span>' +
+          '<button type="button" class="qty__side" data-act="inc" data-id="' + id + '" aria-label="Meer ' + safeName + '"' + off + '>' + QTY_ICONS.plus + '</button>' +
+          '</div>' +
+          '<span class="qty__gyoza" aria-hidden="true">' + QTY_ICONS.gyoza + '</span>' +
+          '<button type="button" class="qty__add" data-act="add" data-id="' + id + '" aria-label="Voeg ' + safeName + ' toe aan je mandje"' + (qty ? ' disabled' : '') + '>' + QTY_ICONS.plus + '</button>' +
+          '</div>' +
+          '</div>';
       }
 
       function itemHtml(item) {
@@ -1642,10 +1847,45 @@
         refreshIcons();
       }
 
+      /* Restart a CSS animation class on an element. */
+      function replay(el, cls) {
+        el.classList.remove(cls);
+        void el.offsetWidth;
+        el.classList.add(cls);
+      }
+
+      /* Update the existing control in place, so its CSS transitions and keyframes can play.
+         0 -> 1 runs the poppy open, n -> n+1 bumps the number, 1 -> 0 collapses back to the round button. */
+      function updateQtyControl(holder, id) {
+        const root = holder.querySelector('.qty');
+        if (!root) {
+          holder.innerHTML = controlHtml(id);
+          return;
+        }
+        const prev = Number(root.dataset.qty) || 0;
+        const qty = state.cart[id] || 0;
+        if (qty === prev) return;
+
+        const num = root.querySelector('.qty__num');
+        root.dataset.qty = String(qty);
+        root.querySelector('[data-act="add"]').disabled = qty > 0;
+        root.querySelector('[data-act="dec"]').disabled = qty === 0;
+        root.querySelector('[data-act="inc"]').disabled = qty === 0;
+
+        if (qty === 0) {
+          /* Keep the last number while the row fades out (it is hidden), so "0" never flashes. */
+          root.classList.remove('is-opening');
+        } else {
+          num.textContent = String(qty);
+          if (prev === 0) replay(root, 'is-opening');
+          else if (qty > prev) replay(num, 'is-bump');
+        }
+      }
+
       /* Update only the add/stepper controls so the grid does not re-render on each tap. */
       function syncControls(id) {
         document.querySelectorAll('[data-ctl="' + id + '"]').forEach((holder) => {
-          holder.innerHTML = controlHtml(id);
+          updateQtyControl(holder, id);
         });
       }
 
@@ -1903,10 +2143,11 @@
         const holder = scope === grid
           ? grid.querySelector('[data-ctl="' + id + '"]')
           : cartItems.querySelector('li[data-id="' + id + '"]');
+        /* Skip disabled buttons: the dish control disables whichever side is hidden. */
         let target = holder && (
-          holder.querySelector('[data-act="' + act + '"]') ||
-          holder.querySelector('[data-act="inc"]') ||
-          holder.querySelector('[data-act="add"]')
+          holder.querySelector('[data-act="' + act + '"]:not(:disabled)') ||
+          holder.querySelector('[data-act="inc"]:not(:disabled)') ||
+          holder.querySelector('[data-act="add"]:not(:disabled)')
         );
         if (!target && scope === cartItems) {
           target = cartItems.querySelector('[data-act]') || browseBtn;
@@ -2122,8 +2363,7 @@
       }
 
       function initTheme() {
-        const systemLight = window.matchMedia('(prefers-color-scheme: light)');
-        applyTheme(storedTheme() || (systemLight.matches ? 'light' : 'dark'));
+        applyTheme(storedTheme() || 'dark');
 
         document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -2133,15 +2373,7 @@
           });
         });
 
-        /* Follow the system setting until the visitor picks a theme. */
-        const follow = (e) => {
-          if (!storedTheme()) applyTheme(e.matches ? 'light' : 'dark');
-        };
-        if (systemLight.addEventListener) {
-          systemLight.addEventListener('change', follow);
-        } else if (systemLight.addListener) {
-          systemLight.addListener(follow);
-        }
+        /* New visitors get the dark theme; only an explicit choice (stored) changes it. */
       }
 
       /* ---------- Mobile menu ---------- */
@@ -2327,11 +2559,12 @@
     (function () {
       'use strict';
 
-      var SHOW_AT = 0.95;      /* progress at which the page fades in */
-      var HIDE_BELOW = 0.9;    /* progress below which it hides again (stops flicker near the threshold) */
-      var LERP_RATE = 9;       /* higher = the video follows the scroll more tightly, per second */
+      var SHOW_AT = 0.8;      /* progress at which the page fades in */
+      var HIDE_BELOW = 0.72;    /* progress below which it hides again (stops flicker near the threshold) */
+      var LERP_RATE = 40;       /* higher = the video follows the scroll more tightly, per second */
       var SETTLE = 0.0005;     /* progress difference treated as "arrived" */
-      var SEEK_EPSILON = 0.004; /* seconds; smaller differences are not worth a seek */
+      var SEEK_EPSILON = 0.006; /* seconds; smaller differences are not worth a seek */
+      var FADE_START = 0.55;    /* progress where the video starts to dim and soften; fully dim at 1 */
       var MAX_FRAME_S = 0.05;  /* cap dt so a stalled tab does not jump */
 
       var root = document.documentElement;
@@ -2339,8 +2572,12 @@
 
       var runway = document.getElementById('scrub');
       var video = runway ? runway.querySelector('.scrub__video') : null;
-      var src = video ? video.getAttribute('data-src') : '';
-      if (!runway || !video || !src) {
+      /* Clip list: data-src is tried first, data-fallback-src only if that file fails to load. */
+      var sources = video
+        ? [video.getAttribute('data-src'), video.getAttribute('data-fallback-src')].filter(Boolean)
+        : [];
+      var sourceIndex = 0;
+      if (!runway || !video || !sources.length) {
         root.classList.remove('scrub-on');
         return;
       }
@@ -2363,6 +2600,12 @@
         return span > 0 ? clamp01((window.scrollY - top) / span) : 1;
       }
 
+      /* 0 until FADE_START, then eases (smoothstep) to 1 at the end of the runway. */
+      function fadeAmount(progress) {
+        var t = clamp01((progress - FADE_START) / (1 - FADE_START));
+        return t * t * (3 - 2 * t);
+      }
+
       function setMenuVisible(next) {
         if (next === menuVisible) return;
         menuVisible = next;
@@ -2371,6 +2614,7 @@
 
       function showProgress(progress) {
         runway.style.setProperty('--scrub-p', progress.toFixed(3));
+        runway.style.setProperty('--scrub-fade', fadeAmount(progress).toFixed(3));
         if (progress >= SHOW_AT) setMenuVisible(true);
         else if (progress < HIDE_BELOW) setMenuVisible(false);
       }
@@ -2431,6 +2675,16 @@
         root.classList.remove('scrub-on', 'is-menu-visible');
       }
 
+      /* A clip failed to load: try the next one in the list, and only give up when none are left. */
+      function onError() {
+        if (sourceIndex < sources.length - 1) {
+          sourceIndex += 1;
+          video.src = sources[sourceIndex];
+          return;
+        }
+        disable();
+      }
+
       /* iOS Safari only scrubs a video after it has been started once by a user gesture. */
       function unlockPlayback() {
         var attempt = video.play();
@@ -2444,7 +2698,7 @@
 
       video.muted = true;
       video.addEventListener('loadedmetadata', onMetadata);
-      video.addEventListener('error', disable);
+      video.addEventListener('error', onError);
       window.addEventListener('scroll', onScroll, { passive: true });
       window.addEventListener('resize', onScroll);
       window.addEventListener('pageshow', onScroll);
@@ -2453,7 +2707,601 @@
       target = current = readProgress();
       showProgress(target);
       /* The src is set here, not in the markup, so visitors without the effect never download the video. */
-      video.src = src;
+      video.src = sources[0];
+    })();
+  </script>
+<script>
+    /* Intro gate: the lock-screen swipe.
+       The intro does not follow the scroll one wheel tick at a time. One decisive swipe (wheel flick,
+       trackpad swipe, touch swipe, or Space / arrow down) plays the whole video and docks the hero.
+       A soft swipe only nudges the video and it springs back. The same swipe upwards at the top of the
+       hero plays the intro in reverse.
+       The gate drives the page by writing window.scrollY, so the scrub script (which reads the scroll
+       position) keeps working unchanged. */
+    (function () {
+      'use strict';
+
+      var root = document.documentElement;
+      var runway = document.getElementById('scrub');
+      if (!runway || !root.classList.contains('scrub-on')) return;
+
+      var PLAY_MS = 3600;          /* the whole video, start to end */
+      var MIN_ANIM_MS = 420;       /* shortest animation, used for the spring back */
+      var PREVIEW = 0.1;           /* share of the video a soft swipe may move before it springs back */
+      var COMMIT_WHEEL_PX = 80;    /* wheel or trackpad distance within one gesture that counts as a swipe */
+      var WHEEL_IDLE_MS = 170;     /* no wheel events for this long ends the gesture */
+      var GESTURE_GAP_MS = 350;    /* quiet time needed before a pull from the hero top can start */
+      var COMMIT_TOUCH_VH = 0.18;  /* touch: drag distance (share of viewport height) that counts as a swipe */
+      var COMMIT_TOUCH_MIN_PX = 90;
+      var FLING_MIN_PX = 36;       /* touch: shortest drag that still counts when it is fast */
+      var FLING_PX_PER_MS = 0.5;   /* touch: speed that counts as a flick */
+      var LINE_PX = 40;            /* pixels per line for wheels that report lines (Firefox) */
+      var SETTLE_IDLE_MS = 160;    /* idle time before an outside scroll is settled to the nearest end */
+      var EDGE_PX = 2;             /* px; a scroll position this close to our last write is ours */
+      var HERO_TOL_PX = 64;        /* px; this close to the end of the runway counts as "at the hero" */
+
+      var state = 'rest';          /* 'rest' | 'drag' | 'anim' */
+      var home = 0;                /* 0 = intro start, 1 = hero (intro played) */
+      var pos = 0;                 /* progress currently shown, 0 to 1 */
+      var written = window.scrollY;
+      var anim = null;
+      var rafId = 0;
+      var releaseTimer = 0;
+      var settleTimer = 0;
+      var lastOther = 0;
+      var pull = 0;
+      var startShift = 0;
+      var touch = null;
+
+      function enabled() {
+        return root.classList.contains('scrub-on');
+      }
+
+      function clamp(value, low, high) {
+        return value < low ? low : value > high ? high : value;
+      }
+
+      /* Fast start, long soft landing: most of the video passes in the first half of the swipe. */
+      function easePlay(t) {
+        return 1 - Math.pow(1 - t, 2.2);
+      }
+
+      function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+      }
+
+      function geometry() {
+        return {
+          top: runway.getBoundingClientRect().top + window.scrollY,
+          span: Math.max(0, runway.offsetHeight - window.innerHeight)
+        };
+      }
+
+      function endY() {
+        var g = geometry();
+        return g.top + g.span;
+      }
+
+      function atHero() {
+        return window.scrollY >= endY() - HERO_TOL_PX;
+      }
+
+      function progressNow() {
+        var g = geometry();
+        return g.span > 0 ? clamp((window.scrollY - g.top) / g.span, 0, 1) : 1;
+      }
+
+      function writePos(p) {
+        var g = geometry();
+        pos = p;
+        written = g.top + p * g.span;
+        window.scrollTo(0, written);
+      }
+
+      function setZone(on) {
+        root.classList.toggle('intro-zone', on);
+      }
+
+      function haltSmooth() {
+        if (window.sdSmooth) window.sdSmooth.halt();
+      }
+
+      function swallow(e) {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+      }
+
+      function stopAnim() {
+        if (rafId) window.cancelAnimationFrame(rafId);
+        rafId = 0;
+        anim = null;
+      }
+
+      function finish(to) {
+        stopAnim();
+        writePos(to);
+        home = to;
+        state = 'rest';
+        pull = 0;
+        lastOther = performance.now();
+        setZone(to === 0);
+      }
+
+      function step(now) {
+        var t = clamp((now - anim.start) / anim.duration, 0, 1);
+        writePos(anim.from + (anim.to - anim.from) * anim.ease(t));
+        if (t >= 1) {
+          finish(anim.to);
+          return;
+        }
+        rafId = window.requestAnimationFrame(step);
+      }
+
+      /* kind 'play' runs the video and ignores input until it is done; 'back' is a short spring
+         that a new swipe may interrupt. */
+      function animateTo(to, kind) {
+        stopAnim();
+        window.clearTimeout(releaseTimer);
+        var distance = Math.abs(to - pos);
+        if (distance < 0.0005) {
+          finish(to);
+          return;
+        }
+        state = 'anim';
+        setZone(true);
+        anim = {
+          kind: kind,
+          from: pos,
+          to: to,
+          start: performance.now(),
+          duration: clamp(distance * PLAY_MS, MIN_ANIM_MS, PLAY_MS),
+          ease: kind === 'play' ? easePlay : easeOutCubic
+        };
+        rafId = window.requestAnimationFrame(step);
+      }
+
+      function commit() {
+        window.clearTimeout(releaseTimer);
+        animateTo(home === 0 ? 1 : 0, 'play');
+      }
+
+      function release() {
+        if (state !== 'drag') return;
+        window.clearTimeout(releaseTimer);
+        pull = 0;
+        animateTo(home, 'back');
+      }
+
+      function beginPull() {
+        stopAnim();
+        haltSmooth();
+        window.clearTimeout(settleTimer);
+        state = 'drag';
+        pull = 0;
+        startShift = Math.min(Math.abs(pos - home), PREVIEW);
+        setZone(true);
+      }
+
+      /* amount: 0 to 1 of the distance needed to commit. */
+      function preview(amount) {
+        var shift = startShift + (PREVIEW - startShift) * clamp(amount, 0, 1);
+        writePos(home === 0 ? shift : 1 - shift);
+      }
+
+      /* ----- wheel and trackpad ----- */
+      function canStartWheel(dy, now) {
+        if (home === 0) return dy > 0;
+        return dy < 0 && window.scrollY <= endY() + EDGE_PX && now - lastOther >= GESTURE_GAP_MS;
+      }
+
+      function onWheel(e) {
+        if (!enabled() || e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        if (document.body.classList.contains('locked')) return;
+        var unit = e.deltaMode === 1 ? LINE_PX : e.deltaMode === 2 ? window.innerHeight : 1;
+        var dy = e.deltaY * unit;
+        if (dy === 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+        var now = performance.now();
+
+        if (state === 'anim' && anim && anim.kind === 'play') {
+          swallow(e);
+          return;
+        }
+        if (state !== 'drag' && !canStartWheel(dy, now)) {
+          lastOther = now;
+          return;
+        }
+        swallow(e);
+        if (state !== 'drag') beginPull();
+        pull = Math.max(0, pull + (home === 0 ? dy : -dy));
+        if (pull >= COMMIT_WHEEL_PX) {
+          commit();
+          return;
+        }
+        preview(pull / COMMIT_WHEEL_PX);
+        window.clearTimeout(releaseTimer);
+        releaseTimer = window.setTimeout(release, WHEEL_IDLE_MS);
+      }
+
+      /* ----- touch ----- */
+      function touchCommitPx() {
+        return Math.max(COMMIT_TOUCH_MIN_PX, window.innerHeight * COMMIT_TOUCH_VH);
+      }
+
+      function canStartTouch(dy) {
+        if (home === 0) return dy > 0;
+        return dy < 0 && window.scrollY <= endY() + EDGE_PX;
+      }
+
+      function onTouchStart(e) {
+        touch = null;
+        if (!enabled() || e.touches.length !== 1) return;
+        if (document.body.classList.contains('locked')) return;
+        var point = e.touches[0];
+        touch = { y0: point.clientY, y: point.clientY, t: performance.now(), v: 0, mode: '' };
+      }
+
+      function onTouchMove(e) {
+        if (!touch || !enabled() || !e.touches.length) return;
+        var point = e.touches[0];
+        var now = performance.now();
+        var dt = now - touch.t;
+        /* Positive = finger moving up = the page wants to go down. */
+        var dy = touch.y0 - point.clientY;
+        if (dt > 0) touch.v = touch.v * 0.6 + ((touch.y - point.clientY) / dt) * 0.4;
+        touch.y = point.clientY;
+        touch.t = now;
+
+        if (state === 'anim' && anim && anim.kind === 'play') {
+          swallow(e);
+          return;
+        }
+        if (!touch.mode) {
+          if (Math.abs(dy) < 6) return;
+          touch.mode = canStartTouch(dy) ? 'pull' : 'native';
+          if (touch.mode === 'pull') beginPull();
+        }
+        if (touch.mode !== 'pull' || state !== 'drag') return;
+        swallow(e);
+        pull = Math.max(0, home === 0 ? dy : -dy);
+        preview(pull / touchCommitPx());
+      }
+
+      function onTouchEnd(e) {
+        var done = touch;
+        touch = null;
+        if (!done || done.mode !== 'pull' || state !== 'drag') return;
+        var speed = home === 0 ? done.v : -done.v;
+        if (performance.now() - done.t > 80) speed = 0; /* the finger rested before lifting */
+        if (e.type !== 'touchcancel' && (pull >= touchCommitPx() || (pull >= FLING_MIN_PX && speed >= FLING_PX_PER_MS))) {
+          commit();
+        } else {
+          release();
+        }
+      }
+
+      /* ----- keyboard ----- */
+      function onKeyDown(e) {
+        if (!enabled() || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        if (document.body.classList.contains('locked')) return;
+        var key = e.key;
+        var space = key === ' ' || key === 'Spacebar';
+        if (!(space || key === 'PageDown' || key === 'ArrowDown')) return;
+        var target = e.target;
+        if (target && target.closest) {
+          if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
+          if (space && target.closest('button, a, summary')) return;
+        }
+        if (state === 'anim' && anim && anim.kind === 'play') {
+          e.preventDefault();
+          return;
+        }
+        if (home === 0) {
+          e.preventDefault();
+          haltSmooth();
+          commit();
+        }
+      }
+
+      /* ----- scrolling by other means (scrollbar, anchors, Tab focus, restored position) ----- */
+      function settle() {
+        if (!enabled() || state !== 'rest') return;
+        if (atHero()) {
+          home = 1;
+          pos = 1;
+          written = window.scrollY;
+          setZone(false);
+          return;
+        }
+        pos = progressNow();
+        animateTo(pos >= 0.5 ? 1 : 0, pos >= 0.5 ? 'play' : 'back');
+      }
+
+      function onScroll() {
+        if (!enabled() || state !== 'rest') return;
+        if (Math.abs(window.scrollY - written) <= EDGE_PX) return;
+        if (home === 1 && atHero()) {
+          written = window.scrollY; /* ordinary scrolling on the page below the intro */
+          return;
+        }
+        window.clearTimeout(settleTimer);
+        settleTimer = window.setTimeout(settle, SETTLE_IDLE_MS);
+      }
+
+      /* Lets the inertia scroller know where it must stop. */
+      window.sdIntro = {
+        floor: function () {
+          return enabled() && home === 1 ? endY() : 0;
+        },
+        /* An anchor link was used while the swipe animation or a drag is still running: finish the intro
+           at once, so the animation cannot pull the page back up afterwards. */
+        skip: function () {
+          if (!enabled() || state === 'rest') return;
+          window.clearTimeout(releaseTimer);
+          touch = null;
+          finish(1);
+        }
+      };
+
+      home = atHero() ? 1 : 0;
+      pos = home;
+      written = home === 0 ? 0 : window.scrollY;
+      setZone(home === 0);
+
+      window.addEventListener('wheel', onWheel, { passive: false, capture: true });
+      document.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+      document.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
+      document.addEventListener('touchend', onTouchEnd, { capture: true });
+      document.addEventListener('touchcancel', onTouchEnd, { capture: true });
+      window.addEventListener('keydown', onKeyDown);
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      if (home === 0 && window.scrollY > EDGE_PX) settle();
+    })();
+  </script>
+<script>
+    /* Inertia scrolling for mouse wheel and trackpad.
+       The wheel adds to a target position and the page eases towards it every frame, so it keeps gliding
+       after the last tick. Anchor links glide with a timed ease on every device. The wheel part is for mouse and trackpad only; touch devices keep native scrolling,
+       which already has momentum. Anything that moves the page by other means (keyboard, scrollbar,
+       scrollIntoView) is detected in onScroll and takes over. */
+    (function () {
+      'use strict';
+
+      var root = document.documentElement;
+      var fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduce) return;
+
+      var RATE = 6.5;            /* higher = shorter glide after you stop scrolling (per second) */
+      var WHEEL_MULT = 1;        /* 1 = same distance as the native wheel */
+      var LINE_PX = 40;          /* pixels per line for wheels that report lines (Firefox) */
+      var STOP_AT = 0.4;         /* px; closer than this counts as arrived */
+      var MAX_FRAME_S = 0.05;    /* cap dt so a stalled tab does not jump */
+      var WRITE_TOLERANCE = 2;   /* px; a scroll position this close to our last write is ours */
+      var TWEEN_MIN_MS = 600;    /* anchor glide: shortest duration */
+      var TWEEN_MAX_MS = 1500;   /* anchor glide: longest duration */
+      var TWEEN_MS_PER_PX = 0.4; /* anchor glide: duration per pixel of distance, between min and max */
+      var DOCK_ZONE = 0.15;      /* last share of the intro runway that glides on to the hero */
+      var DOCK_DELAY_MS = 140;   /* idle time before the dock glide starts */
+
+      var current = window.scrollY;
+      var target = current;
+      var written = current;
+      var rafId = 0;
+      var lastTime = 0;
+      var direction = 0;
+      var dockTimer = 0;
+      var tween = null;
+
+      function clamp(value, low, high) {
+        return value < low ? low : value > high ? high : value;
+      }
+
+      function maxScroll() {
+        return Math.max(0, root.scrollHeight - window.innerHeight);
+      }
+
+      /* Lowest position the glide may reach: once the intro has played, the hero top is the floor,
+         so the intro is only re-entered through the swipe gate. */
+      function minScroll() {
+        return window.sdIntro ? window.sdIntro.floor() : 0;
+      }
+
+      function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      }
+
+      function write(y) {
+        written = y;
+        window.scrollTo(0, y);
+      }
+
+      function frame(now) {
+        var dt = clamp((now - lastTime) / 1000, 0, MAX_FRAME_S);
+        var done;
+        lastTime = now;
+        if (tween) {
+          var t = clamp((now - tween.start) / tween.duration, 0, 1);
+          current = tween.from + (tween.to - tween.from) * easeInOutCubic(t);
+          done = t >= 1;
+        } else {
+          current += (target - current) * (1 - Math.exp(-RATE * dt));
+          done = Math.abs(target - current) < STOP_AT;
+          if (done) current = target;
+        }
+        write(current);
+        if (done) {
+          rafId = 0;
+          tween = null;
+          root.classList.remove('glide-on');
+          scheduleDock();
+          return;
+        }
+        rafId = window.requestAnimationFrame(frame);
+      }
+
+      function start() {
+        if (rafId) return;
+        root.classList.add('glide-on');
+        lastTime = performance.now();
+        rafId = window.requestAnimationFrame(frame);
+      }
+
+      function stop() {
+        if (rafId) window.cancelAnimationFrame(rafId);
+        rafId = 0;
+        tween = null;
+        root.classList.remove('glide-on');
+      }
+
+      /* Timed glide to an absolute position (anchor links and the dock). */
+      function glideTo(y) {
+        var to = clamp(y, minScroll(), maxScroll());
+        window.clearTimeout(dockTimer);
+        if (!rafId) current = window.scrollY;
+        var distance = Math.abs(to - current);
+        if (distance < 1) return;
+        direction = to > current ? 1 : -1;
+        tween = {
+          from: current,
+          to: to,
+          start: performance.now(),
+          duration: clamp(distance * TWEEN_MS_PER_PX, TWEEN_MIN_MS, TWEEN_MAX_MS)
+        };
+        target = to;
+        start();
+      }
+
+      /* Replaces the old scroll-snap at the end of the intro: after scrolling down and stopping in the
+         last part of the runway, glide on to the hero instead of leaving the page hidden. */
+      function dockToHero() {
+        var runway = document.getElementById('scrub');
+        if (!runway || !root.classList.contains('scrub-on')) return;
+        var top = runway.getBoundingClientRect().top + window.scrollY;
+        var end = top + runway.offsetHeight - window.innerHeight;
+        var span = end - top;
+        var y = window.scrollY;
+        if (span > 0 && y >= end - span * DOCK_ZONE && y < end - 1) glideTo(end);
+      }
+
+      function scheduleDock() {
+        window.clearTimeout(dockTimer);
+        if (direction > 0) dockTimer = window.setTimeout(dockToHero, DOCK_DELAY_MS);
+      }
+
+      /* True when the wheel is over an element that can still scroll in that direction itself. */
+      function scrollsInside(el, dy) {
+        while (el && el !== document.body && el !== root) {
+          if (el.nodeType === 1) {
+            var oy = window.getComputedStyle(el).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
+              var canScroll = dy < 0 ? el.scrollTop > 0 : el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+              if (canScroll) return true;
+            }
+          }
+          el = el.parentElement;
+        }
+        return false;
+      }
+
+      function onWheel(e) {
+        if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey) return; /* ctrl + wheel is zoom */
+        if (document.body.classList.contains('locked')) return;                  /* cart drawer is open */
+        if (e.deltaY === 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+        if (scrollsInside(e.target, e.deltaY)) return;
+
+        var unit = e.deltaMode === 1 ? LINE_PX : e.deltaMode === 2 ? window.innerHeight : 1;
+        var delta = e.deltaY * unit * WHEEL_MULT;
+        e.preventDefault();
+        window.clearTimeout(dockTimer);
+        if (!rafId) {
+          current = window.scrollY;
+          target = current;
+        } else if (tween) {
+          tween = null;
+          target = current;
+        }
+        direction = delta > 0 ? 1 : -1;
+        target = clamp(target + delta, minScroll(), maxScroll());
+        start();
+      }
+
+      /* Any scroll position that is not our own last write comes from somewhere else: follow it. */
+      function onScroll() {
+        if (Math.abs(window.scrollY - written) <= WRITE_TOLERANCE) return;
+        stop();
+        window.clearTimeout(dockTimer);
+        current = target = written = window.scrollY;
+      }
+
+      function onAnchorClick(e) {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var link = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+        if (!link || link.classList.contains('skip-link')) return;
+        var hash = link.getAttribute('href');
+        if (!hash || hash.length < 2) return;
+        var dest = null;
+        try {
+          dest = document.getElementById(decodeURIComponent(hash.slice(1)));
+        } catch (err) {
+          return;
+        }
+        if (!dest) return;
+
+        e.preventDefault();
+        if (window.sdIntro) window.sdIntro.skip();
+        var padding = parseFloat(window.getComputedStyle(root).scrollPaddingTop) || 0;
+        var margin = parseFloat(window.getComputedStyle(dest).scrollMarginTop) || 0;
+        glideTo(dest.getBoundingClientRect().top + window.scrollY - padding - margin);
+        try {
+          window.history.pushState(null, '', hash);
+        } catch (err) {
+          /* Some contexts (file:// in old browsers) block pushState; the glide still works. */
+        }
+      }
+
+      /* The intro gate calls this when it takes over the scroll position. */
+      window.sdSmooth = {
+        halt: function () {
+          stop();
+          window.clearTimeout(dockTimer);
+          current = target = written = window.scrollY;
+        }
+      };
+
+      if (fine) {
+        root.classList.add('smooth-on');
+        window.addEventListener('wheel', onWheel, { passive: false });
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      document.addEventListener('click', onAnchorClick);
+    })();
+  </script>
+<script>
+    /* Zoom lock. The viewport meta tag already forbids zooming; these handlers cover browsers that ignore it. */
+    (function () {
+      'use strict';
+
+      var options = { passive: false };
+
+      function block(e) {
+        if (e.cancelable) e.preventDefault();
+      }
+
+      /* iOS Safari ignores user-scalable=no. Its pinch gesture fires gesture events. */
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (type) {
+        document.addEventListener(type, block, options);
+      });
+
+      /* Everywhere else: ignore any touch movement with two or more fingers. */
+      document.addEventListener('touchmove', function (e) {
+        if (e.touches && e.touches.length > 1) block(e);
+      }, options);
+
+      /* Trackpad pinch and ctrl + wheel arrive as a wheel event with ctrlKey set. */
+      window.addEventListener('wheel', function (e) {
+        if (e.ctrlKey) block(e);
+      }, options);
     })();
   </script>
 </body>
