@@ -8,7 +8,7 @@ Deliver the entire deliverable as a **single, standalone, self-contained `index.
 
 # DESIGN SYSTEM: APPLE AESTHETICS & "LIQUID GLASS" (visionOS)
 1. **Surfaces & Translucency:**
-   - **Base Palette:** Deep Obsidian & Nori Charcoal background (`#090A0E` to `#111317`), Crisp Rice White text (`#F5F5F7`), Muted Zinc secondary typography (`#A1A1AA`), and Torched Crimson/Coral accents (`#F43F5E` / `#E11D48`).
+   - **Base Palette:** Deep Obsidian & Nori Charcoal background (`#090A0E` to `#111317`), Crisp Rice White text (`#F5F5F7`), Muted Zinc secondary typography (`#A1A1AA`), and Ember orange accents (`#FF7A2F` / `#C8470D`).
    - **Liquid Glass Materials:** Multi-layer frosted panels using `backdrop-filter: blur(28px) saturate(190%)`, semi-transparent glass backgrounds (`rgba(18, 20, 24, 0.65)`), 1px micro-specular borders (`border: 1px solid rgba(255, 255, 255, 0.12)`), and subtle top specular rim highlights (`box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18)`).
 2. **Typography & Spatial Hierarchy:**
    - System typography: `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif`.
@@ -56,7 +56,7 @@ Deliver the entire deliverable as a **single, standalone, self-contained `index.
      - Piece count or category description (e.g., "8 stuks", "4 stuks") if applicable.
      - Ingredients/description if available.
      - Price formatted strictly as `€ XX,XX`.
-     - Tags: `Vegetarisch` (emerald glass tag) and `Pikant` (crimson glass tag).
+     - Tags: `Vegetarisch` (emerald glass tag) and `Pikant` (orange glass tag).
      - Interactive `+` button that adds the item to the persistent cart slide-over modal.
 
 5. **Slide-Over Liquid Glass Cart & Order Drawer:**

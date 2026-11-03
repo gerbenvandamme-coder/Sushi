@@ -37,7 +37,7 @@
       --ember-deep: #C8470D;
     }
     * { -webkit-tap-highlight-color: transparent; }
-    html { scroll-behavior: smooth; scroll-padding-top: 100px; color-scheme: dark; touch-action: pan-x pan-y; overflow-x: hidden; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html { scroll-behavior: smooth; scroll-padding-top: 100px; color-scheme: dark; touch-action: pan-x pan-y; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     body {
       margin: 0;
       background: #090A0E;
@@ -3289,6 +3289,7 @@
 
       var root = document.documentElement;
       var fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (reduce) return;
 
@@ -3471,14 +3472,33 @@
 
         e.preventDefault();
         if (window.sdIntro) window.sdIntro.skip();
-        var padding = parseFloat(window.getComputedStyle(root).scrollPaddingTop) || 0;
-        var margin = parseFloat(window.getComputedStyle(dest).scrollMarginTop) || 0;
-        glideTo(dest.getBoundingClientRect().top + window.scrollY - padding - margin);
+
         try {
           window.history.pushState(null, '', hash);
         } catch (err) {
-          /* Some contexts (file:// in old browsers) block pushState; the glide still works. */
+          /* Some contexts (file:// in old browsers) block pushState; the scroll still works. */
         }
+
+        /* Touch devices: skip the per-frame JS glide entirely. It fights the mobile URL-bar
+           height change (maxScroll clamp) and the sub-pixel ownership race in onScroll, which is
+           what made anchor taps jitter or stop short on iOS / Android. A one-shot native scroll
+           on the next frame — after skip() has collapsed the intro runway and the layout has
+           settled — is smooth and reliable there. scroll-padding-top handles the sticky header. */
+        if (coarse) {
+          stop();
+          window.requestAnimationFrame(function () {
+            var padding = parseFloat(window.getComputedStyle(root).scrollPaddingTop) || 0;
+            var margin = parseFloat(window.getComputedStyle(dest).scrollMarginTop) || 0;
+            var y = dest.getBoundingClientRect().top + window.scrollY - padding - margin;
+            y = Math.max(0, Math.min(y, document.documentElement.scrollHeight - window.innerHeight));
+            window.scrollTo({ top: y, left: 0, behavior: 'smooth' });
+          });
+          return;
+        }
+
+        var padding = parseFloat(window.getComputedStyle(root).scrollPaddingTop) || 0;
+        var margin = parseFloat(window.getComputedStyle(dest).scrollMarginTop) || 0;
+        glideTo(dest.getBoundingClientRect().top + window.scrollY - padding - margin);
       }
 
       /* The intro gate calls this when it takes over the scroll position. */
