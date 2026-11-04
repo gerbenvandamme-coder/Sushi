@@ -311,8 +311,95 @@ textarea.field { height: auto; padding: 0.7rem 1rem; resize: vertical; }
 .tag-spicy { color: #FFB98A; background: rgba(255, 122, 47, 0.14); border: 1px solid rgba(255, 154, 92, 0.34); }
 
 /* ===== Allergens: compact neon icons on the cards, full detail in the dish modal ===== */
-.dish-card { position: relative; cursor: pointer; }
+/* ===== Dish cards: dimmed photo at rest; on hover the photo clears and zooms, and the text sits in a floating glass badge ===== */
+.dish-card {
+  --lit: 0; /* 0 = resting, 1 = hovered or keyboard-focused. Every animated value below is derived from it. */
+  --dish-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dish-time: 300ms;
+  --dish-zoom: 0.04;
+  --dish-pop: 0.03;
+  --dish-shade-lit: 0.2;
+  position: relative; isolation: isolate; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  min-width: 0; min-height: 12.5rem; padding: 0.5rem;
+  color: #F5F5F7;
+  background-color: #14161b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+/* Hover only on devices that really hover, so a tap on a phone does not leave the card lit. */
+@media (hover: hover) { .dish-card:hover { --lit: 1; } }
+.dish-card:has(:focus-visible) { --lit: 1; }
 .dish-card:hover, .dish-card:focus-within { z-index: 3; }
+
+.dish-card__media {
+  position: absolute; inset: 0; z-index: -1;
+  overflow: hidden; border-radius: inherit; isolation: isolate; pointer-events: none;
+}
+.dish-card__bg {
+  position: absolute; inset: 0;
+  background-color: #14161b;
+  background-image: var(--photo, none), var(--photo-fallback, none);
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  transform: scale(calc(1 + var(--dish-zoom) * var(--lit)));
+  transition: transform var(--dish-time) var(--dish-ease);
+}
+.dish-card__shade {
+  position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  opacity: calc(1 - var(--lit) * (1 - var(--dish-shade-lit)));
+  transition: opacity var(--dish-time) var(--dish-ease);
+}
+
+.dish-card__badge {
+  position: relative; isolation: isolate;
+  display: flex; flex-direction: column; gap: 1rem;
+  min-width: 0; padding: 0.75rem 0.85rem;
+  border-radius: 14px; transform-origin: left bottom;
+}
+.dish-card__badge .dish-open { overflow-wrap: anywhere; }
+/* The capsule is its own layer, so hover only animates opacity, transform and backdrop-filter (compositor properties). */
+.dish-card__badge::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: rgba(18, 18, 20, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  opacity: var(--lit);
+  transform: scale(calc(1 - var(--dish-pop) * (1 - var(--lit))));
+  transition: opacity var(--dish-time) var(--dish-ease), transform var(--dish-time) var(--dish-ease);
+}
+.dish-card .text-muted { color: rgba(245, 245, 247, 0.78); }
+
+@keyframes dish-badge-settle {
+  0%   { transform: translateY(5px) rotate(-0.8deg); }
+  40%  { transform: translateY(-2px) rotate(0.6deg); }
+  70%  { transform: translateY(1px) rotate(-0.25deg); }
+  100% { transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) {
+    .dish-card:hover .dish-card__badge { animation: dish-badge-settle 520ms var(--dish-ease); }
+  }
+  .dish-card:has(:focus-visible) .dish-card__badge { animation: dish-badge-settle 520ms var(--dish-ease); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dish-card { --dish-zoom: 0; --dish-pop: 0; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dish-card__badge::before { background: rgb(18, 18, 20); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .dish-card__shade { background: rgba(0, 0, 0, 0.82); }
+  .dish-card__badge::before { border-color: rgba(255, 255, 255, 0.6); }
+}
+@media (max-width: 640px) {
+  .dish-card { min-height: 11rem; }
+}
+/* The photo cards stay dark in the light theme, so their text stays light. */
+html[data-theme="light"] .dish-card { color: #F5F5F7; }
+html[data-theme="light"] .dish-card .text-muted { color: rgba(245, 245, 247, 0.78); }
+html[data-theme="light"] .dish-card .tag-veg { color: #6ee7b7; background: rgba(16, 185, 129, 0.12); border-color: rgba(52, 211, 153, 0.3); }
+html[data-theme="light"] .dish-card .tag-spicy { color: #FFB98A; background: rgba(255, 122, 47, 0.14); border-color: rgba(255, 154, 92, 0.34); }
 .dish-open { padding: 0; margin: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-align: left; cursor: pointer; }
 .dish-open:hover { text-decoration: underline; text-decoration-color: rgba(255, 122, 47, 0.7); text-underline-offset: 3px; }
 

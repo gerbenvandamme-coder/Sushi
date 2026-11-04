@@ -684,7 +684,9 @@
   }
 
   function itemHtml(item) {
-    return '<li class="dish-card lift glass-soft flex flex-col justify-between gap-4 rounded-3xl p-5" data-dish="' + item.id + '">' +
+    return '<li class="dish-card lift rounded-3xl" data-dish="' + item.id + '" style="' + dishPhotoStyle(item) + '">' +
+      '<span class="dish-card__media" aria-hidden="true"><span class="dish-card__bg"></span><span class="dish-card__shade"></span></span>' +
+      '<div class="dish-card__badge">' +
       '<div>' +
       '<h4 class="text-base font-semibold leading-snug"><button type="button" class="dish-open" data-act="detail" data-id="' + item.id + '" aria-haspopup="dialog">' + esc(cap(item.name)) + '</button></h4>' +
       (item.desc ? '<p class="mt-1 text-sm leading-relaxed text-muted">' + esc(item.desc) + '</p>' : '') +
@@ -693,6 +695,7 @@
       '<div class="flex items-center justify-between gap-3">' +
       '<span class="dish-card-price">' + eur(item.cents) + '</span>' +
       '<div class="flex min-h-[42px] items-center" data-ctl="' + item.id + '">' + controlHtml(item.id) + '</div>' +
+      '</div>' +
       '</div>' +
       '</li>';
   }
@@ -710,7 +713,7 @@
     const cat = MENU_DATA[ci];
     return '<section class="mb-12" aria-labelledby="cat-' + ci + '">' +
       '<div class="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1">' +
-      '<h3 id="cat-' + ci + '" class="text-2xl font-semibold tracking-tight">' + esc(cat.category) + '</h3>' +
+      '<h3 id="cat-' + ci + '" class="arch-title arch-title--section">' + esc(cat.category) + '</h3>' +
       categoryMetaHtml(cat) +
       '</div>' +
       '<ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">' + items.map(itemHtml).join('') + '</ul>' +
@@ -832,6 +835,29 @@
   function imageFor(categoryName) {
     const key = slug(categoryName);
     return IMAGE_BY_SLUG.get(key) || IMAGE_BY_SLUG.get(IMAGE_ALIASES[key]) || '';
+  }
+
+  /* ---------- Dish photos ---------- */
+  /* js/dish-images.js exposes dishImageMap[dishName]. Index it by normalised name so case and accents do not matter. */
+  const DISH_PHOTO_BY_NAME = new Map();
+  Object.keys(window.dishImageMap || {}).forEach((name) => {
+    DISH_PHOTO_BY_NAME.set(norm(name), window.dishImageMap[name]);
+  });
+
+  function cssUrl(path) {
+    /* A url() inside a custom property is resolved against the stylesheet that reads it (css/main.css),
+       not against the page. An absolute URL avoids that, so Assets/Images/... no longer turns into css/Assets/Images/... */
+    const absolute = new URL(path, document.baseURI).href;
+    return "url('" + absolute.replace(/'/g, '%27') + "')";
+  }
+
+  /* Two stacked backgrounds: the dish photo, then the category photo underneath.
+     A missing dish file paints nothing, so the category photo shows through. */
+  function dishPhotoStyle(item) {
+    const primary = DISH_PHOTO_BY_NAME.get(norm(item.name));
+    const fallback = imageFor(MENU_DATA[item.ci].category);
+    return '--photo:' + (primary ? cssUrl(primary) : 'none') +
+      ';--photo-fallback:' + (fallback ? cssUrl(IMAGE_DIR + fallback) : 'none');
   }
 
   function categoryCardHtml(cat, ci) {

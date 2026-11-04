@@ -1,0 +1,151 @@
+/* ===== Display type: Recoleta Bold headings with staggered, grid-aligned placement =====
+   Recoleta is a commercial font, so the file is not bundled. Put Recoleta-Bold.woff2 (and/or
+   Recoleta-Bold.otf) in Assets/Fonts/. Until then the headings use Fraunces (loaded from Google Fonts),
+   a soft serif with a similar shape. */
+
+@font-face {
+  font-family: "Recoleta";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local("Recoleta Bold"), local("Recoleta-Bold"),
+       url("../Assets/Fonts/Recoleta-Bold.woff2") format("woff2"),
+       url("../Assets/Fonts/Recoleta-Bold.otf") format("opentype");
+}
+
+:root {
+  --font-recoleta: "Recoleta", "Fraunces", "Cooper Black", Georgia, serif;
+  --title-ink: #FFF4E6;     /* warm ivory on the dark theme */
+  --title-accent: #FFB98A;  /* peach: dimension rules and the ampersand */
+  --title-step: 0.8em;      /* indent of a staggered line */
+}
+html[data-theme="light"] {
+  --title-ink: #1D1D1F;
+  --title-accent: #C8470D;
+}
+/* Titles that sit on photos or on the orange banner stay light in both themes. */
+.panel,
+.cta-banner__link {
+  --title-ink: #FFF4E6;
+  --title-accent: #FFB98A;
+}
+
+/* ----- Shared title style ----- */
+.arch-title {
+  margin-bottom: 0;
+  font-family: var(--font-recoleta);
+  font-weight: 700;
+  font-variation-settings: "opsz" 28;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--title-ink);
+  overflow-wrap: break-word;
+}
+.arch-line { display: block; }
+.arch-line--indent { padding-inline-start: var(--title-step); }
+.arch-line--half { padding-inline-start: calc(var(--title-step) * 0.4); }
+.arch-amp { color: var(--title-accent); }
+
+/* ----- Sizes (element + class beats the Tailwind size utilities) ----- */
+h1.arch-title--hero {
+  --title-step: 0.9em;
+  font-size: clamp(2.6rem, 7vw, 4.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+h2.arch-title--xl {
+  --title-step: 0.9em;
+  font-size: clamp(2.6rem, 6.4vw, 4.5rem);
+  line-height: 0.96;
+  letter-spacing: -0.03em;
+}
+h3.arch-title--feature {
+  --title-step: 0.7em;
+  font-size: clamp(2.6rem, 6.4vw, 4.4rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+}
+h3.arch-title--card {
+  font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  line-height: 1.02;
+}
+h3.arch-title--small {
+  font-size: 1.4rem;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+/* Menu category headings: a vertical ember bar acts as a column edge. */
+h3.arch-title--section {
+  padding-inline-start: 0.8rem;
+  border-inline-start: 3px solid var(--ember, #FF7A2F);
+  font-size: clamp(1.7rem, 3.6vw, 2.3rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+/* ----- Section eyebrow: index number, hairline divider, label ----- */
+.arch-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.arch-eyebrow::before {
+  content: attr(data-no);
+  content: attr(data-no) / "";
+  padding-inline-end: 0.9rem;
+  border-inline-end: 1px solid currentColor;
+  font-variant-numeric: tabular-nums;
+  color: var(--title-ink);
+  opacity: 0.55;
+}
+
+/* ----- Dimension rule: the first line of a section title runs out to the column edge ----- */
+.arch-title--xl .arch-line:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.arch-title--xl .arch-line:first-child::after {
+  content: "";
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  height: 2px;
+  margin-top: 0.12em;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--title-accent), transparent);
+}
+
+/* ----- "Direct bestellen" banner: two offset lines, left-aligned as one block ----- */
+.cta-banner__title {
+  font-family: var(--font-recoleta);
+  font-weight: 700;
+  font-variation-settings: "opsz" 28;
+  font-size: clamp(2.5rem, 11.5vw, 6.5rem);
+  line-height: 0.94;
+  letter-spacing: -0.03em;
+  text-align: left;
+}
+.cta-banner__title .arch-line--indent {
+  --title-step: 1.1em;
+  color: #FFE9D2;
+}
+
+/* ----- Dish detail title ----- */
+.dish-title {
+  font-family: var(--font-recoleta);
+  font-weight: 700;
+  font-variation-settings: "opsz" 28;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+/* ----- Line-by-line entrance, driven by the existing .reveal / .in classes ----- */
+@keyframes arch-line-in {
+  from { opacity: 0; transform: translate3d(-0.14em, 0.45em, 0); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reveal.in .arch-line {
+    animation: arch-line-in 900ms var(--ease, cubic-bezier(0.16, 1, 0.3, 1)) calc(var(--d, 0ms) + var(--i, 0) * 110ms) backwards;
+  }
+}
