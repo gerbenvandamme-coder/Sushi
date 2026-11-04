@@ -1,0 +1,123 @@
+/* ===== Page-level additions: menu spacing under the fixed navbar, and the home "Direct bestellen" banner ===== */
+
+/* Menu page: the fixed header (top 12px + ~60px nav) must not cover the back link, title or category cards. */
+html.route-menu #kaart {
+  padding-top: calc(6.5rem + env(safe-area-inset-top, 0px));
+  scroll-margin-top: 6.5rem;
+}
+
+/* The intro pulls <main> up by 100vh (css/scrub.css) so the hero docks over the video. On the menu route the
+   video runway (#scrub) is hidden, so that pull would move the categories and dishes off the top of the screen. */
+html.scrub-on.route-menu #app > main {
+  margin-top: 0;
+}
+
+/* ===== Direct bestellen banner (home only) ===== */
+.cta-banner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+html.route-menu .cta-banner { display: none; }
+
+.cta-banner__link {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  min-height: clamp(300px, 38vw, 440px);
+  padding: 4.5rem 1.5rem;
+  overflow: hidden;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  background: #1a0b05;
+}
+
+/* Sushi photo: darkened and slightly blurred. Oversized so the blur does not show transparent edges. */
+.cta-banner__link::before {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  z-index: -2;
+  background: url("../Assets/Images/Sushi%20Combos.webp") center / cover no-repeat;
+  filter: blur(3px) saturate(1.1) brightness(0.75);
+  transform: scale(1.04);
+  transition: transform 900ms var(--ease, ease);
+}
+
+/* Orange tint on top of the photo, darker towards the edges to keep the text readable. */
+.cta-banner__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(120deg, rgba(255, 122, 47, 0.8) 0%, rgba(214, 78, 14, 0.66) 50%, rgba(24, 9, 4, 0.82) 100%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.35), transparent 60%);
+}
+
+.cta-banner__eyebrow {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cta-banner__title {
+  font-size: clamp(2.4rem, 8.5vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.45);
+}
+
+.cta-banner__sub {
+  max-width: 34rem;
+  font-size: clamp(1rem, 2.4vw, 1.2rem);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
+}
+
+.cta-banner__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 60px;
+  margin-top: 0.6rem;
+  padding: 0 2rem;
+  border-radius: 9999px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #b8400a;
+  background: #fff;
+  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.6);
+  transition: transform 300ms var(--ease, ease), box-shadow 300ms var(--ease, ease);
+}
+.cta-banner__btn svg { width: 1.3rem; height: 1.3rem; }
+
+@media (hover: hover) {
+  .cta-banner__link:hover::before { transform: scale(1.1); }
+  .cta-banner__link:hover .cta-banner__btn {
+    transform: translateY(-2px);
+    box-shadow: 0 22px 40px -14px rgba(0, 0, 0, 0.7);
+  }
+}
+.cta-banner__link:active .cta-banner__btn { transform: scale(0.97); }
+.cta-banner__link:focus-visible { outline: 3px solid #fff; outline-offset: -6px; }
+
+@media (max-width: 640px) {
+  .cta-banner__link { padding: 3.5rem 1.25rem; }
+  .cta-banner__btn { width: 100%; max-width: 360px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-banner__link::before,
+  .cta-banner__btn { transition: none; }
+}

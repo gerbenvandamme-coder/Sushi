@@ -1,0 +1,146 @@
+/* ===== Scroll-scrubbed intro video (everything is keyed on html.scrub-on) ===== */
+:root {
+  --scrub-length: 300vh;
+  --scrub-scrim: #090A0E;
+  --scrub-scrim-opacity: 0.7;   /* dark mode: overlay strength once the fade is complete */
+  --scrub-dim: 0.6;             /* dark mode: video brightness ends at 1 - 0.6 = 0.4 */
+  --scrub-blur: 6px;            /* softening reached at the end of the fade */
+  --dock-distance: 60vh;        /* how far below its resting place each hero block starts */
+  --dock-duration: 1100ms;
+  --dock-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dock-stagger: 1.8;          /* multiplies each block's inline --d delay (about 110-145ms between blocks) */
+}
+/* Light mode needs a fully opaque scrim so the secondary text keeps its 4.5:1 contrast. */
+html[data-theme="light"] {
+  --scrub-scrim: #F5F5F7;
+  --scrub-scrim-opacity: 1;
+  --scrub-dim: 0;
+}
+
+.scrub { display: none; }
+html.scrub-on .scrub { display: block; position: relative; height: var(--scrub-length); }
+
+.scrub__video {
+  position: fixed; inset: 0; z-index: -1;
+  width: 100vw; height: 100vh; height: 100dvh;
+  object-fit: cover; background: #090A0E; pointer-events: none;
+  /* Dims and softens over the last 20% of the runway (--scrub-fade is set from JS, 0 to 1).
+     The slight scale hides the transparent edges the blur would otherwise create. */
+  transform: scale(calc(1 + var(--scrub-fade, 0) * 0.06));
+  filter: brightness(calc(1 - var(--scrub-fade, 0) * var(--scrub-dim, 0.6))) blur(calc(var(--scrub-fade, 0) * var(--scrub-blur, 6px)));
+  will-change: transform, filter;
+}
+/* Sits above the video and below the page. It fades in with the scroll (last 20% of the runway) so text stays readable. */
+.scrub__scrim {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--scrub-scrim);
+  /* Scroll-driven, so no transition. */
+  opacity: calc(var(--scrub-fade, 0) * var(--scrub-scrim-opacity, 0.7));
+}
+
+/* Scroll cue: pinned to the viewport during the runway and faded out by --scrub-p (set from JS). */
+.scrub__stage {
+  position: sticky; top: 0; height: 100vh; height: 100dvh;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
+  pointer-events: none;
+  opacity: calc(1 - var(--scrub-p, 0) * 8);
+}
+.scrub__cue {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 0.5rem; margin: 0;
+  color: #fff; font-size: 0.8rem; letter-spacing: 0.28em; text-transform: uppercase;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.7);
+}
+.scrub__arrow { width: 20px; height: 20px; animation: scrub-nudge 1.6s var(--ease) infinite; }
+@keyframes scrub-nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* The existing page is revealed once the video has reached the end (.is-menu-visible). */
+html.scrub-on #app > main,
+html.scrub-on #app > footer {
+  opacity: 0; pointer-events: none;
+  transition: opacity 700ms var(--ease);
+}
+html.scrub-on.is-menu-visible #app > main,
+html.scrub-on.is-menu-visible #app > footer {
+  opacity: 1; pointer-events: auto;
+}
+
+/* ===== Magnetic dock and section snapping (all gated on html.scrub-on) ===== */
+
+/* Pull the page up by one viewport so the hero sits in the last screen of the runway
+   and docks over the dimmed video instead of arriving from below the fold. */
+html.scrub-on #app > main {
+  position: relative;
+  margin-top: -100vh; margin-top: -100dvh;
+  transition-duration: 300ms;
+}
+
+/* Hero blocks wait below the fold, then are pulled into place one after another.
+   The delay reuses each block's inline --d value, scaled by --dock-stagger. */
+html.scrub-on #top .reveal {
+  opacity: 0;
+  transform: translate3d(0, var(--dock-distance), 0);
+  transition: transform 450ms cubic-bezier(0.7, 0, 0.84, 0), opacity 250ms linear;
+  will-change: transform, opacity;
+}
+html.scrub-on.is-menu-visible #top .reveal {
+  opacity: 1;
+  transform: none;
+  transition:
+    transform var(--dock-duration) var(--dock-ease) calc(var(--d, 0ms) * var(--dock-stagger)),
+    opacity 500ms linear calc(var(--d, 0ms) * var(--dock-stagger));
+}
+/* The IntersectionObserver still adds .in; its rise keyframes would fight the dock transform. */
+html.scrub-on #top .reveal.in { animation: none; }
+
+/* No section snapping. The sections have very different heights (and #signature and #kaart are taller
+   than the screen on phones), so a fixed snap point left half-sections in view and pulled the page back
+   to an awkward place when scrolling on. The end of the intro is handled by dockToHero in the script. */
+/* Inertia scrolling (mouse and trackpad) is done in JS. Native smooth scrolling and snapping would
+   fight with the per-frame scrollTo calls, so both are switched off while it is active. */
+html.smooth-on { scroll-behavior: auto; scroll-snap-type: none; }
+/* Intro gate: while the intro is waiting or being driven by script, native snapping and smooth
+   scrolling would fight with the per-frame scrollTo calls. */
+html.intro-zone { scroll-behavior: auto; scroll-snap-type: none; }
+/* Anchor glide (menu button, nav links): the script moves the page frame by frame, so native smooth
+   scrolling and snapping must stay out of the way until it has arrived. */
+html.glide-on { scroll-behavior: auto; scroll-snap-type: none; }
+/* html has scroll-padding-top: 100px for the fixed nav. Cancel it for the hero so anchor links to it
+   land exactly where the runway ends (progress 1) and not at ~95%, where the page is still hidden. */
+html.scrub-on #top { scroll-margin-top: -100px; }
+
+/* ===== Intro gate: the page stays blank until the whole clip is loaded (html.scrub-loading) =====
+   The canvas keeps the theme background (taken from body), so the blank screen matches the theme.
+   The body fades in when the class is removed. Only active when the scroll intro is. */
+html.scrub-on body { transition: opacity 400ms var(--ease); }
+html.scrub-loading, html.scrub-loading body { overflow: hidden; }
+html.scrub-loading body { opacity: 0; visibility: hidden; transition: none; }
+
+/* ===== Intro off (default): the last frame of the clip stays as a still background =====
+   It matches the end state of the scroll intro: same scale, dimming, blur and scrim, so the page looks the same
+   as after the video has played. The image layer is filtered; the scrim layer is not (as with the video). */
+.scrub-still { display: none; }
+html:not(.scrub-on) .scrub-still {
+  display: block; position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  background: #090A0E;
+}
+html:not(.scrub-on) .scrub-still::before {
+  content: ""; position: absolute; inset: 0;
+  background: url("../Assets/Images/intro-last-frame.jpg") center / cover no-repeat;
+  transform: scale(1.06);
+  filter: brightness(calc(1 - var(--scrub-dim, 0.6))) blur(var(--scrub-blur, 6px));
+}
+html:not(.scrub-on) .scrub-still::after {
+  content: ""; position: absolute; inset: 0;
+  background: var(--scrub-scrim);
+  opacity: var(--scrub-scrim-opacity, 0.7);
+}
+
+/* ===== Intro switch in the navigation (same visibility rule as the desktop theme button) ===== */
+.intro-desktop { display: none; }
+@media (min-width: 768px) { .intro-desktop { display: grid; } }
+html .icon-btn[aria-pressed="true"] { color: #FF7A2F; background: rgba(255, 122, 47, 0.16); border-color: rgba(255, 122, 47, 0.45); }
+html[data-theme="light"] .icon-btn[aria-pressed="true"] { color: #C2410C; background: rgba(255, 122, 47, 0.14); border-color: rgba(194, 65, 12, 0.4); }
